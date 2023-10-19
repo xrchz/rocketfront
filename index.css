@@ -1,0 +1,13 @@
+body {
+  font-family: monospace;
+}
+a {
+  text-decoration: none;
+}
+div.address {
+  display: flex;
+  flex-direction: column;
+}
+div.address > input {
+  width: 42em;
+}
