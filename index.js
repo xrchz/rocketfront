@@ -42,18 +42,25 @@ function createAddressInput() {
        ensName: input.value}
     input.setCustomValidity('')
     if (isAddress(address)) {
+      const checksummedAddress = getAddress(address)
       if (typeof ensName == 'string') {
-        // TODO: should we really be swapping out what they wrote? but typing an address manually will be rare. swapping a paste seems ok.
         input.value = ensName
         input.classList.remove('address')
-        span.innerText = getAddress(address)
+        span.innerText = checksummedAddress
+        span.appendChild(document.createTextNode(' '))
       }
       else {
-        input.value = getAddress(address)
+        input.value = checksummedAddress
         input.classList.add('address')
-        span.innerText = `(debug: no ens; got ${ensName})` // TODO: ''
+        span.innerText = ''
       }
-      // TODO: add (activate) copy button for address
+      const a = span.appendChild(document.createElement('a'))
+      a.innerText = '📋'
+      a.addEventListener('click', () => {
+        navigator.clipboard.writeText(checksummedAddress)
+        a.innerText = 'copied!'
+        setTimeout(() => a.innerText = '📋', 696)
+      })
     }
     else {
       if (typeof ensName == 'string' && ensName.endsWith('.eth'))
@@ -67,10 +74,22 @@ function createAddressInput() {
   return div
 }
 
+const accountLabel = document.createElement('label')
+accountLabel.innerText = 'Account: '
 const accountInput = createAddressInput()
 
 const body = document.querySelector('body')
-body.appendChild(accountInput)
+body.appendChild(accountLabel)
+accountLabel.appendChild(accountInput)
+
+// TODO: display rETH balance
+// TODO: display rETH history and profits
+
+// TODO: button to connect account
+// TODO: form to mint rETH
+// TODO: form to burn rETH
+
+// TODO: display NO status
 
 // account under consideration (can be the connected one, or other custom)
 // connected account (if any)
