@@ -4,6 +4,15 @@ const provider = new ethers.FallbackProvider([
   new ethers.BrowserProvider(window.ethereum),
   ethers.getDefaultProvider('mainnet')])
 
+const rocketStorageAddress = await provider.resolveName('rocketstorage.eth')
+const rocketStorage = new ethers.Contract(rocketStorageAddress,
+  ['function getAddress(bytes32) view returns (address)'],
+  provider)
+const getRocketAddress = name => rocketStorage['getAddress(bytes32)'](ethers.id(`contract.address${name}`))
+const rocketToken = new ethers.Contract(await getRocketAddress('rocketTokenRETH'),
+  ['function balanceOf(address) view returns (uint256)'],
+  provider)
+
 function createAddressInput() {
   const div = document.createElement('div')
   const input = document.createElement('input')
@@ -12,6 +21,8 @@ function createAddressInput() {
   div.appendChild(input)
   div.appendChild(span)
   input.addEventListener('change', async () => {
+    let resolve
+    input.theAddress = new Promise(x => resolve = x)
     span.innerText = 'processing...'
     input.value = input.value.trim()
     const {address, ensName} = ethers.isAddress(input.value) ?
@@ -22,6 +33,7 @@ function createAddressInput() {
     input.setCustomValidity('')
     if (ethers.isAddress(address)) {
       const checksummedAddress = ethers.getAddress(address)
+      resolve(checksummedAddress)
       if (typeof ensName == 'string') {
         input.value = ensName
         input.classList.remove('address')
@@ -39,7 +51,7 @@ function createAddressInput() {
         navigator.clipboard.writeText(checksummedAddress)
         a.innerText = 'copied!'
         setTimeout(() => a.innerText = '📋', 696)
-      })
+      }, {passive: true})
     }
     else {
       if (typeof ensName == 'string' && ensName.endsWith('.eth'))
@@ -48,9 +60,10 @@ function createAddressInput() {
         span.innerText = 'Enter checksummed address (0x69Fed420...) or ENS name (eatme.eth)'
       input.classList.remove('address')
       input.setCustomValidity('Need Ethereum address or ENS name')
+      resolve()
     }
-  })
-  return div
+  }, {passive: true})
+  return {div, input}
 }
 
 const accountLabel = document.createElement('label')
@@ -59,9 +72,25 @@ const accountInput = createAddressInput()
 
 const body = document.querySelector('body')
 body.appendChild(accountLabel)
-accountLabel.appendChild(accountInput)
+accountLabel.appendChild(accountInput.div)
 
-// TODO: display rETH balance
+const balanceDiv = body.appendChild(document.createElement('div'))
+const balanceLabel = balanceDiv.appendChild(document.createElement('label'))
+balanceLabel.innerText = 'rETH balance: '
+const balanceInput = balanceDiv.appendChild(document.createElement('input'))
+balanceInput.setAttribute('readonly', true)
+
+accountInput.input.addEventListener('change', async () => {
+  const address = await accountInput.input.theAddress
+  if (address) {
+    const rETHBalance = await rocketToken.balanceOf(address)
+    balanceInput.value = ethers.formatEther(rETHBalance)
+  }
+  else {
+    balanceInput.value = ''
+  }
+}, {passive: true})
+
 // TODO: display rETH history and profits
 
 // TODO: button to connect account
