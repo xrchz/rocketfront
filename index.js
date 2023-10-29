@@ -1,10 +1,13 @@
-import { createPublicClient, createWalletClient, isAddress, getAddress, fallback, http, custom } from 'viem'
-import { mainnet } from 'viem/chains'
+import { createPublicClient, isAddress, getAddress, fallback, http, custom } from 'viem'
+import { mainnet, localhost } from 'viem/chains'
 import { normalize } from 'viem/ens'
-
-const localTransport = http('http://localhost:8545')
-const infura = http('https://mainnet.infura.io/v3/c6485f444d4f4102866edf0f8d932cf5')
-const alchemy = http('https://eth-mainnet.g.alchemy.com/v2/UQbReQ5UxSIDIal3NsSbfS2LsGoo7LDo')
+import { configureChains, createConfig } from '@wagmi/core'
+import { jsonRpcProvider } from '@wagmi/core/providers/jsonRpc'
+import { publicProvider } from '@wagmi/core/providers/public'
+import { alchemyProvider } from '@wagmi/core/providers/alchemy'
+import { infuraProvider } from '@wagmi/core/providers/infura'
+import { InjectedConnector } from '@wagmi/core'
+import { WalletConnectConnector } from '@wagmi/core/connectors/walletConnect'
 
 function normalise(name) {
   try {
@@ -15,14 +18,18 @@ function normalise(name) {
   }
 }
 
-const publicClient = createPublicClient({
-  chain: mainnet,
-  transport: fallback([
-    custom({request (args) { return window.ethereum.request(args) }}),
-    localTransport,
-    alchemy,
-    infura,
-  ])
+const { chains, publicClient, webSocketPublicClient } = configureChains(
+  [mainnet, localhost],
+  [alchemyProvider({ apiKey: 'UQbReQ5UxSIDIal3NsSbfS2LsGoo7LDo' }),
+   infuraProvider({ apiKey: 'c6485f444d4f4102866edf0f8d932cf5' }),
+    // TODO: add jsonRpcProvider for injected?
+   publicProvider()],
+)
+
+const config = createConfig({
+  chains,
+  publicClient,
+  webSocketPublicClient
 })
 
 function createAddressInput() {
