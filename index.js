@@ -1,29 +1,8 @@
-import { createPublicClient, createWalletClient, isAddress, getAddress, fallback, http, custom } from 'viem'
-import { mainnet } from 'viem/chains'
-import { normalize } from 'viem/ens'
+import { ethers } from 'ethers'
 
-const localTransport = http('http://localhost:8545')
-const infura = http('https://mainnet.infura.io/v3/c6485f444d4f4102866edf0f8d932cf5')
-const alchemy = http('https://eth-mainnet.g.alchemy.com/v2/UQbReQ5UxSIDIal3NsSbfS2LsGoo7LDo')
-
-function normalise(name) {
-  try {
-    return normalize(name)
-  }
-  catch {
-    return null
-  }
-}
-
-const publicClient = createPublicClient({
-  chain: mainnet,
-  transport: fallback([
-    custom({request (args) { return window.ethereum.request(args) }}),
-    localTransport,
-    alchemy,
-    infura,
-  ])
-})
+const provider = new ethers.FallbackProvider([
+  new ethers.BrowserProvider(window.ethereum),
+  ethers.getDefaultProvider('mainnet')])
 
 function createAddressInput() {
   const div = document.createElement('div')
@@ -35,14 +14,14 @@ function createAddressInput() {
   input.addEventListener('change', async () => {
     span.innerText = 'processing...'
     input.value = input.value.trim()
-    const {address, ensName} = isAddress(input.value) ?
+    const {address, ensName} = ethers.isAddress(input.value) ?
       {address: input.value,
-        ensName: await publicClient.getEnsName({address: getAddress(input.value)}).catch(e => e)} :
-      {address: await publicClient.getEnsAddress({name: normalise(input.value)}).catch(e => e),
+       ensName: await provider.lookupAddress(input.value).catch(e => e)} :
+      {address: await provider.resolveName(input.value).catch(e => e),
        ensName: input.value}
     input.setCustomValidity('')
-    if (isAddress(address)) {
-      const checksummedAddress = getAddress(address)
+    if (ethers.isAddress(address)) {
+      const checksummedAddress = ethers.getAddress(address)
       if (typeof ensName == 'string') {
         input.value = ensName
         input.classList.remove('address')
@@ -66,7 +45,7 @@ function createAddressInput() {
       if (typeof ensName == 'string' && ensName.endsWith('.eth'))
         span.innerText = `No address found for ${ensName}`
       else
-        span.innerText = 'Enter address (0x69Fed420...) or ENS name (eatme.eth)'
+        span.innerText = 'Enter checksummed address (0x69Fed420...) or ENS name (eatme.eth)'
       input.classList.remove('address')
       input.setCustomValidity('Need Ethereum address or ENS name')
     }
