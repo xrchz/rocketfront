@@ -1,5 +1,28 @@
 body {
   font-family: monospace;
+  background-color: #f92;
+  color: #17f;
+  width: fit-content;
+  margin: auto;
+  padding: 1em;
+}
+input {
+  background-color: #fd9;
+  color: #17f;
+}
+input[type=text]:read-only,
+div.address > span {
+  border-style: groove;
+  background-color: #ec8;
+  border-width: 2px;
+  border-color: whitesmoke;
+  padding: 0.2em;
+}
+div.address > span:empty::after {
+  content: '\200B';
+}
+div.address > span {
+  margin-top: 0.1em;
 }
 a {
   text-decoration: none;
@@ -10,4 +33,7 @@ div.address {
 }
 div.address > input {
   width: 42em;
+}
+div.balance, div.wallet {
+  margin-top: 1em;
 }

@@ -23,7 +23,7 @@ function createAddressInput() {
   input.addEventListener('change', async () => {
     let resolve
     input.theAddress = new Promise(x => resolve = x)
-    span.innerText = 'processing...'
+    span.innerText = 'loading...'
     input.value = input.value.trim()
     const {address, ensName} = ethers.isAddress(input.value) ?
       {address: input.value,
@@ -56,8 +56,10 @@ function createAddressInput() {
     else {
       if (typeof ensName == 'string' && ensName.endsWith('.eth'))
         span.innerText = `No address found for ${ensName}`
+      else if (input.value != '')
+        span.innerText = 'Checksummed address (0x69Fe...) or ENS name (amy.eth)'
       else
-        span.innerText = 'Enter checksummed address (0x69Fed420...) or ENS name (eatme.eth)'
+        span.innerText = ''
       input.classList.remove('address')
       input.setCustomValidity('Need Ethereum address or ENS name')
       resolve()
@@ -74,26 +76,62 @@ const body = document.querySelector('body')
 body.appendChild(accountLabel)
 accountLabel.appendChild(accountInput.div)
 
-const balanceDiv = body.appendChild(document.createElement('div'))
-const balanceLabel = balanceDiv.appendChild(document.createElement('label'))
-balanceLabel.innerText = 'rETH balance: '
-const balanceInput = balanceDiv.appendChild(document.createElement('input'))
-balanceInput.setAttribute('readonly', true)
+const rETHBalanceDiv = body.appendChild(document.createElement('div'))
+const rETHBalanceLabel = rETHBalanceDiv.appendChild(document.createElement('label'))
+rETHBalanceLabel.innerText = 'rETH balance: '
+const rETHBalanceInput = rETHBalanceDiv.appendChild(document.createElement('input'))
+rETHBalanceInput.type = 'text'
+rETHBalanceInput.setAttribute('readonly', true)
+rETHBalanceDiv.classList.add('balance')
+
+const ETHBalanceDiv = body.appendChild(document.createElement('div'))
+const ETHBalanceLabel = ETHBalanceDiv.appendChild(document.createElement('label'))
+ETHBalanceLabel.innerText = 'ETH balance: '
+const ETHBalanceInput = ETHBalanceDiv.appendChild(document.createElement('input'))
+ETHBalanceInput.type = 'text'
+ETHBalanceDiv.classList.add('balance')
+ETHBalanceInput.setAttribute('readonly', true)
 
 accountInput.input.addEventListener('change', async () => {
   const address = await accountInput.input.theAddress
   if (address) {
     const rETHBalance = await rocketToken.balanceOf(address)
-    balanceInput.value = ethers.formatEther(rETHBalance)
+    const ETHBalance = await provider.getBalance(address)
+    rETHBalanceInput.value = ethers.formatEther(rETHBalance)
+    ETHBalanceInput.value = ethers.formatEther(ETHBalance)
   }
   else {
-    balanceInput.value = ''
+    rETHBalanceInput.value = ''
+    ETHBalanceInput.value = ''
   }
 }, {passive: true})
 
-// TODO: display rETH history and profits
+// TODO: listen for balance changes from provider and update accordingly
 
-// TODO: button to connect account
+// TODO: display rETH history and profits
+// probably need to use a real server for that, so we can cache info server-side
+// and also try to forward the server's RPC as a fallback option
+
+const walletSelectDiv = body.appendChild(document.createElement('div'))
+walletSelectDiv.classList.add('wallet')
+const browserWalletLabel = walletSelectDiv.appendChild(document.createElement('label'))
+const browserWalletRadio = document.createElement('input')
+const walletConnectLabel = walletSelectDiv.appendChild(document.createElement('label'))
+const walletConnectRadio = document.createElement('input')
+walletConnectLabel.innerText = 'WalletConnect'
+browserWalletLabel.innerText = 'Browser'
+walletConnectLabel.appendChild(walletConnectRadio)
+browserWalletLabel.appendChild(browserWalletRadio)
+walletConnectRadio.type = 'radio'
+browserWalletRadio.type = 'radio'
+walletConnectRadio.name = 'wallet'
+browserWalletRadio.name = 'wallet'
+browserWalletRadio.checked = true
+const connectButton = walletSelectDiv.appendChild(document.createElement('input'))
+connectButton.type = 'button'
+connectButton.value = 'Connect'
+// TODO: make button connect account
+
 // TODO: form to mint rETH
 // TODO: form to burn rETH
 
