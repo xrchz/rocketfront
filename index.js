@@ -1,7 +1,9 @@
 import { ethers } from 'ethers'
 
+const browserProvider = new ethers.BrowserProvider(window.ethereum)
+
 const provider = new ethers.FallbackProvider([
-  new ethers.BrowserProvider(window.ethereum),
+  browserProvider,
   ethers.getDefaultProvider('mainnet')])
 
 const rocketStorageAddress = await provider.resolveName('rocketstorage.eth')
@@ -73,10 +75,9 @@ accountLabel.innerText = 'Account: '
 const accountInput = createAddressInput()
 
 const body = document.querySelector('body')
-body.appendChild(accountLabel)
 accountLabel.appendChild(accountInput.div)
 
-const rETHBalanceDiv = body.appendChild(document.createElement('div'))
+const rETHBalanceDiv = document.createElement('div')
 const rETHBalanceLabel = rETHBalanceDiv.appendChild(document.createElement('label'))
 rETHBalanceLabel.innerText = 'rETH balance: '
 const rETHBalanceInput = rETHBalanceDiv.appendChild(document.createElement('input'))
@@ -84,7 +85,7 @@ rETHBalanceInput.type = 'text'
 rETHBalanceInput.setAttribute('readonly', true)
 rETHBalanceDiv.classList.add('balance')
 
-const ETHBalanceDiv = body.appendChild(document.createElement('div'))
+const ETHBalanceDiv = document.createElement('div')
 const ETHBalanceLabel = ETHBalanceDiv.appendChild(document.createElement('label'))
 ETHBalanceLabel.innerText = 'ETH balance: '
 const ETHBalanceInput = ETHBalanceDiv.appendChild(document.createElement('input'))
@@ -92,7 +93,9 @@ ETHBalanceInput.type = 'text'
 ETHBalanceDiv.classList.add('balance')
 ETHBalanceInput.setAttribute('readonly', true)
 
-accountInput.input.addEventListener('change', async () => {
+async function updateBalances() {
+  rETHBalanceInput.value = 'loading...'
+  ETHBalanceInput.value = 'loading...'
   const address = await accountInput.input.theAddress
   if (address) {
     const rETHBalance = await rocketToken.balanceOf(address)
@@ -104,15 +107,15 @@ accountInput.input.addEventListener('change', async () => {
     rETHBalanceInput.value = ''
     ETHBalanceInput.value = ''
   }
-}, {passive: true})
+}
 
-// TODO: listen for balance changes from provider and update accordingly
+accountInput.input.addEventListener('change', updateBalances, {passive: true})
 
 // TODO: display rETH history and profits
 // probably need to use a real server for that, so we can cache info server-side
 // and also try to forward the server's RPC as a fallback option
 
-const walletSelectDiv = body.appendChild(document.createElement('div'))
+const walletSelectDiv = document.createElement('div')
 walletSelectDiv.classList.add('wallet')
 const browserWalletLabel = walletSelectDiv.appendChild(document.createElement('label'))
 const browserWalletRadio = document.createElement('input')
@@ -127,15 +130,37 @@ browserWalletRadio.type = 'radio'
 walletConnectRadio.name = 'wallet'
 browserWalletRadio.name = 'wallet'
 browserWalletRadio.checked = true
+
 const connectButton = walletSelectDiv.appendChild(document.createElement('input'))
 connectButton.type = 'button'
 connectButton.value = 'Connect'
+connectButton.addEventListener('click', () => {
+
+})
 // TODO: make button connect account
+
+const statusDiv = document.createElement('div')
+statusDiv.classList.add('status')
+const statusConnected = statusDiv.appendChild(document.createElement('span'))
+const statusBlockNumber = statusDiv.appendChild(document.createElement('span'))
+statusConnected.innerText = await provider.getNetwork().then(n => n.name)
+provider.addListener('block', async () => {
+  await updateBalances()
+  statusBlockNumber.innerText = await provider.getBlockNumber().then(n => n.toString())
+})
 
 // TODO: form to mint rETH
 // TODO: form to burn rETH
 
 // TODO: display NO status
+
+body.append(
+  accountLabel,
+  rETHBalanceDiv,
+  ETHBalanceDiv,
+  walletSelectDiv,
+  statusDiv
+)
 
 // account under consideration (can be the connected one, or other custom)
 // connected account (if any)

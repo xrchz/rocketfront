@@ -37,3 +37,7 @@ div.address > input {
 div.balance, div.wallet {
   margin-top: 1em;
 }
+div.status {
+  display: flex;
+  justify-content: space-evenly;
+}
