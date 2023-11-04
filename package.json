@@ -7,8 +7,5 @@
   "dependencies": {
     "ethers": "6",
     "@walletconnect/modal": "2"
-  },
-  "devDependencies": {
-    "@jsenv/importmap-node-module": "5"
   }
 }

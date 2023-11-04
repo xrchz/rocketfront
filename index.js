@@ -1,4 +1,4 @@
-import { ethers } from 'ethers'
+import { ethers } from './node_modules/ethers/dist/ethers.min.js'
 
 const browserProvider = new ethers.BrowserProvider(window.ethereum)
 

@@ -6,39 +6,6 @@
     <link rel=stylesheet href=index.css type=text/css>
   </head>
   <body>
-    <script type=importmap>
-{
-  "imports": {
-    "@noble/curves/secp256k1": "./node_modules/@noble/curves/esm/secp256k1.js",
-    "@noble/hashes/ripemd160": "./node_modules/@noble/hashes/esm/ripemd160.js",
-    "@adraffy/ens-normalize": "./node_modules/@adraffy/ens-normalize/dist/index.mjs",
-    "@noble/hashes/pbkdf2": "./node_modules/@noble/hashes/esm/pbkdf2.js",
-    "@noble/hashes/scrypt": "./node_modules/@noble/hashes/esm/scrypt.js",
-    "@noble/hashes/sha256": "./node_modules/@noble/hashes/esm/sha256.js",
-    "@noble/hashes/sha512": "./node_modules/@noble/hashes/esm/sha512.js",
-    "@noble/hashes/hmac": "./node_modules/@noble/hashes/esm/hmac.js",
-    "@noble/hashes/sha3": "./node_modules/@noble/hashes/esm/sha3.js",
-    "aes-js": "./node_modules/aes-js/lib.esm/index.js",
-    "ethers": "./node_modules/ethers/lib.esm/index.js"
-  },
-  "scopes": {
-    "./node_modules/ethers/lib.esm/": {
-      "./node_modules/ethers/lib.esm/providers/provider-ipcsocket.js": "./node_modules/ethers/lib.esm/providers/provider-ipcsocket-browser.js",
-      "./node_modules/ethers/lib.esm/wordlists/wordlists.js": "./node_modules/ethers/lib.esm/wordlists/wordlists-browser.js",
-      "./node_modules/ethers/lib.esm/crypto/crypto.js": "./node_modules/ethers/lib.esm/crypto/crypto-browser.js",
-      "./node_modules/ethers/lib.esm/providers/ws.js": "./node_modules/ethers/lib.esm/providers/ws-browser.js",
-      "./node_modules/ethers/lib.esm/utils/base64.js": "./node_modules/ethers/lib.esm/utils/base64-browser.js",
-      "./node_modules/ethers/lib.esm/utils/geturl.js": "./node_modules/ethers/lib.esm/utils/geturl-browser.js"
-    },
-    "./node_modules/@noble/curves/": {
-      "@noble/hashes/utils": "./node_modules/@noble/hashes/esm/utils.js"
-    },
-    "./node_modules/@noble/hashes/": {
-      "@noble/hashes/crypto": "./node_modules/@noble/hashes/esm/crypto.js"
-    }
-  }
-}
-    </script>
     <script src=index.js type=module></script>
   </body>
 </html>
