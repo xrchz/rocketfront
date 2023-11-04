@@ -1,6 +1,7 @@
 import { ethers } from './node_modules/ethers/dist/ethers.min.js'
 
 const browserProvider = new ethers.BrowserProvider(window.ethereum)
+let signer
 
 const provider = new ethers.FallbackProvider([
   browserProvider,
@@ -134,20 +135,45 @@ walletConnectRadio.name = 'wallet'
 browserWalletRadio.name = 'wallet'
 browserWalletRadio.checked = true
 
+browserProvider.addListener('accountsChanged', connectBrowserAccount)
+
+async function connectBrowserAccount() {
+  signer = await browserProvider.getSigner()
+  accountInput.input.value = await signer.getAddress()
+  accountInput.input.dispatchEvent(new Event('change'))
+  if (connectButton.value == 'Connect') {
+    accountInput.input.setAttribute('readonly', true)
+    connectButton.value = 'Disconnect'
+  }
+}
+
 const connectButton = walletSelectDiv.appendChild(document.createElement('input'))
 connectButton.type = 'button'
 connectButton.value = 'Connect'
 connectButton.addEventListener('click', () => {
-
+  if (connectButton.value == 'Connect') {
+    if (browserWalletRadio.checked) {
+      connectBrowserAccount()
+    }
+    else if (walletConnectRadio.checked) {
+      console.log(`WalletConnect not yet supported`) // TODO
+    }
+    else {
+      console.log(`No wallet option checked, cannot connect`) // TODO: better error handling. This should just never happen.
+    }
+  }
+  else {
+      console.log(`Disconnect not yet supported`) // TODO
+  }
 })
-// TODO: make button connect account
 
 const statusDiv = document.createElement('div')
 statusDiv.classList.add('status')
 const statusConnected = statusDiv.appendChild(document.createElement('span'))
 const statusBlockNumber = statusDiv.appendChild(document.createElement('span'))
-statusConnected.innerText = await provider.getNetwork().then(n => n.name)
 // TODO: make this a network selector instead
+// TODO: also make it loading... until the provider connects
+statusConnected.innerText = await provider.getNetwork().then(n => n.name)
 provider.addListener('block', async () => {
   await updateBalances()
   statusBlockNumber.innerText = await provider.getBlockNumber().then(n => n.toString())
@@ -159,6 +185,8 @@ provider.addListener('block', async () => {
 
 const title = document.createElement('h1')
 title.innerText = 'Unofficial Rocket Pool Liquid Staking Interface'
+
+// TODO: add all this before waiting for the provider to connect
 
 body.append(
   title,
