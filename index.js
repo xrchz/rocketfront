@@ -5,6 +5,8 @@ const browserProvider = new ethers.BrowserProvider(window.ethereum)
 const provider = new ethers.FallbackProvider([
   browserProvider,
   ethers.getDefaultProvider('mainnet')])
+// TODO: make network configurable
+// TODO: allow custom RPC?
 
 const rocketStorageAddress = await provider.resolveName('rocketstorage.eth')
 const rocketStorage = new ethers.Contract(rocketStorageAddress,
@@ -94,7 +96,7 @@ ETHBalanceDiv.classList.add('balance')
 ETHBalanceInput.setAttribute('readonly', true)
 
 async function updateBalances() {
-  rETHBalanceInput.value = 'loading...'
+  rETHBalanceInput.value = 'loading...' // TODO: don't replace old value, just indicate loading
   ETHBalanceInput.value = 'loading...'
   const address = await accountInput.input.theAddress
   if (address) {
@@ -114,6 +116,7 @@ accountInput.input.addEventListener('change', updateBalances, {passive: true})
 // TODO: display rETH history and profits
 // probably need to use a real server for that, so we can cache info server-side
 // and also try to forward the server's RPC as a fallback option
+// OR: use IndexedDB to store the info locally
 
 const walletSelectDiv = document.createElement('div')
 walletSelectDiv.classList.add('wallet')
@@ -144,23 +147,31 @@ statusDiv.classList.add('status')
 const statusConnected = statusDiv.appendChild(document.createElement('span'))
 const statusBlockNumber = statusDiv.appendChild(document.createElement('span'))
 statusConnected.innerText = await provider.getNetwork().then(n => n.name)
+// TODO: make this a network selector instead
 provider.addListener('block', async () => {
   await updateBalances()
   statusBlockNumber.innerText = await provider.getBlockNumber().then(n => n.toString())
 })
 
+
 // TODO: form to mint rETH
 // TODO: form to burn rETH
 
-// TODO: display NO status
+const title = document.createElement('h1')
+title.innerText = 'Unofficial Rocket Pool Liquid Staking Interface'
 
 body.append(
+  title,
   accountLabel,
   rETHBalanceDiv,
   ETHBalanceDiv,
   walletSelectDiv,
   statusDiv
 )
+
+// TODO: show rETH approvals and option to revoke?
+
+// TODO: display NO status
 
 // account under consideration (can be the connected one, or other custom)
 // connected account (if any)
