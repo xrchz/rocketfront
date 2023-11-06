@@ -10,6 +10,9 @@ input {
   background-color: #fd9;
   color: #17f;
 }
+input[type=button]:disabled {
+  color: #ec8;
+}
 input[type=text]:read-only,
 div.address > span {
   border-style: groove;

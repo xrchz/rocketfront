@@ -147,50 +147,47 @@ walletConnectRadio.name = 'wallet'
 browserWalletRadio.name = 'wallet'
 browserWalletRadio.checked = true
 
-window.ethereum.addListener('accountsChanged', connectBrowserAccount)
+window.ethereum.on('accountsChanged', connectBrowserAccount)
 
 async function connectBrowserAccount() {
+  // TODO: check accounts available, and if it is empty or the one already connected
+  connectButton.disabled = true
   signer = await browserProvider.getSigner()
   accountInput.input.value = await signer.getAddress()
   accountInput.input.dispatchEvent(new Event('change'))
-  if (connectButton.value == 'Connect') {
-    accountInput.input.setAttribute('readonly', true)
-    connectButton.value = 'Disconnect'
-  }
+  accountInput.input.setAttribute('readonly', true)
 }
+// TODO: listen for wallet-initiated disconnect
+// make accountInput writable again
+// make connectButton enabled again
 
 const connectButton = walletSelectDiv.appendChild(document.createElement('input'))
 connectButton.type = 'button'
 connectButton.value = 'Connect'
 connectButton.addEventListener('click', () => {
-  if (connectButton.value == 'Connect') {
-    if (browserWalletRadio.checked) {
-      connectBrowserAccount()
-    }
-    else if (walletConnectRadio.checked) {
-      console.log(`WalletConnect not yet supported`) // TODO
-    }
-    else {
-      console.log(`No wallet option checked, cannot connect`) // TODO: better error handling. This should just never happen.
-    }
-  }
+  if (browserWalletRadio.checked)
+    connectBrowserAccount()
   else {
-    console.log(`Disconnect not yet supported`) // TODO
+    console.assert(walletConnectRadio.checked, `No walletSelect radio checked`)
+    console.log(`WalletConnect not yet supported`) // TODO
   }
 })
 
 statusDiv.classList.add('status')
 statusDiv.innerText = ''
+// TODO: make statusConnected a network selector instead
+// TODO: update it if the provider disconnects
 const statusConnected = statusDiv.appendChild(document.createElement('span'))
 const statusBlockNumber = statusDiv.appendChild(document.createElement('span'))
-// TODO: make this a network selector instead
-// TODO: update if provider disconnects
+async function updateBlockNumber() {
+  statusBlockNumber.innerText = await provider.getBlockNumber().then(n => n.toString())
+}
+await updateBlockNumber()
 statusConnected.innerText = await provider.getNetwork().then(n => n.name)
 provider.addListener('block', async () => {
-  statusBlockNumber.innerText = await provider.getBlockNumber().then(n => n.toString())
+  await updateBlockNumber()
   await updateBalances()
 })
-
 
 // TODO: form to mint rETH
 // TODO: form to burn rETH
