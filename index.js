@@ -135,7 +135,7 @@ walletConnectRadio.name = 'wallet'
 browserWalletRadio.name = 'wallet'
 browserWalletRadio.checked = true
 
-browserProvider.addListener('accountsChanged', connectBrowserAccount)
+window.ethereum.addListener('accountsChanged', connectBrowserAccount)
 
 async function connectBrowserAccount() {
   signer = await browserProvider.getSigner()
