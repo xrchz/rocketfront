@@ -1,9 +1,28 @@
 import { ethers } from './node_modules/ethers/dist/ethers.min.js'
 
-const browserProvider = new ethers.BrowserProvider(window.ethereum)
+const title = document.createElement('h1')
+const accountLabel = document.createElement('label')
+const rETHBalanceDiv = document.createElement('div')
+const ETHBalanceDiv = document.createElement('div')
+const walletSelectDiv = document.createElement('div')
+const statusDiv = document.createElement('div')
+
+title.innerText = 'Unofficial Rocket Pool Liquid Staking Interface'
+statusDiv.innerText = 'loading...'
+
+document.querySelector('body').append(
+  title,
+  accountLabel,
+  rETHBalanceDiv,
+  ETHBalanceDiv,
+  walletSelectDiv,
+  statusDiv
+)
+
+let browserProvider = new ethers.BrowserProvider(window.ethereum)
 let signer
 
-const provider = new ethers.FallbackProvider([
+let provider = new ethers.FallbackProvider([
   browserProvider,
   ethers.getDefaultProvider('mainnet')])
 // TODO: make network configurable
@@ -73,14 +92,11 @@ function createAddressInput() {
   return {div, input}
 }
 
-const accountLabel = document.createElement('label')
 accountLabel.innerText = 'Account: '
 const accountInput = createAddressInput()
 
-const body = document.querySelector('body')
 accountLabel.appendChild(accountInput.div)
 
-const rETHBalanceDiv = document.createElement('div')
 const rETHBalanceLabel = rETHBalanceDiv.appendChild(document.createElement('label'))
 rETHBalanceLabel.innerText = 'rETH balance: '
 const rETHBalanceInput = rETHBalanceDiv.appendChild(document.createElement('input'))
@@ -88,7 +104,6 @@ rETHBalanceInput.type = 'text'
 rETHBalanceInput.setAttribute('readonly', true)
 rETHBalanceDiv.classList.add('balance')
 
-const ETHBalanceDiv = document.createElement('div')
 const ETHBalanceLabel = ETHBalanceDiv.appendChild(document.createElement('label'))
 ETHBalanceLabel.innerText = 'ETH balance: '
 const ETHBalanceInput = ETHBalanceDiv.appendChild(document.createElement('input'))
@@ -119,7 +134,6 @@ accountInput.input.addEventListener('change', updateBalances, {passive: true})
 // and also try to forward the server's RPC as a fallback option
 // OR: use IndexedDB to store the info locally
 
-const walletSelectDiv = document.createElement('div')
 walletSelectDiv.classList.add('wallet')
 const browserWalletLabel = walletSelectDiv.appendChild(document.createElement('label'))
 const browserWalletRadio = document.createElement('input')
@@ -167,8 +181,8 @@ connectButton.addEventListener('click', () => {
   }
 })
 
-const statusDiv = document.createElement('div')
 statusDiv.classList.add('status')
+statusDiv.innerText = ''
 const statusConnected = statusDiv.appendChild(document.createElement('span'))
 const statusBlockNumber = statusDiv.appendChild(document.createElement('span'))
 // TODO: make this a network selector instead
@@ -183,19 +197,7 @@ provider.addListener('block', async () => {
 // TODO: form to mint rETH
 // TODO: form to burn rETH
 
-const title = document.createElement('h1')
-title.innerText = 'Unofficial Rocket Pool Liquid Staking Interface'
-
 // TODO: add all this before waiting for the provider to connect
-
-body.append(
-  title,
-  accountLabel,
-  rETHBalanceDiv,
-  ETHBalanceDiv,
-  walletSelectDiv,
-  statusDiv
-)
 
 // TODO: show rETH approvals and option to revoke?
 
