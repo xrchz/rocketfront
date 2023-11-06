@@ -130,9 +130,7 @@ async function updateBalances() {
 accountInput.input.addEventListener('change', updateBalances, {passive: true})
 
 // TODO: display rETH history and profits
-// probably need to use a real server for that, so we can cache info server-side
-// and also try to forward the server's RPC as a fallback option
-// OR: use IndexedDB to store the info locally
+// - use IndexedDB to cache the data needed
 
 walletSelectDiv.classList.add('wallet')
 const browserWalletLabel = walletSelectDiv.appendChild(document.createElement('label'))
@@ -177,7 +175,7 @@ connectButton.addEventListener('click', () => {
     }
   }
   else {
-      console.log(`Disconnect not yet supported`) // TODO
+    console.log(`Disconnect not yet supported`) // TODO
   }
 })
 
@@ -186,18 +184,16 @@ statusDiv.innerText = ''
 const statusConnected = statusDiv.appendChild(document.createElement('span'))
 const statusBlockNumber = statusDiv.appendChild(document.createElement('span'))
 // TODO: make this a network selector instead
-// TODO: also make it loading... until the provider connects
+// TODO: update if provider disconnects
 statusConnected.innerText = await provider.getNetwork().then(n => n.name)
 provider.addListener('block', async () => {
-  await updateBalances()
   statusBlockNumber.innerText = await provider.getBlockNumber().then(n => n.toString())
+  await updateBalances()
 })
 
 
 // TODO: form to mint rETH
 // TODO: form to burn rETH
-
-// TODO: add all this before waiting for the provider to connect
 
 // TODO: show rETH approvals and option to revoke?
 
