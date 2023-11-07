@@ -151,24 +151,36 @@ browserWalletRadio.checked = true
 
 window.ethereum.on('accountsChanged', connectBrowserAccount)
 
-async function connectBrowserAccount() {
-  // TODO: check accounts available, and if it is empty or the one already connected
-  connectButton.disabled = true
-  signer = await browserProvider.getSigner()
-  accountInput.input.value = await signer.getAddress()
-  accountInput.input.dispatchEvent(new Event('change'))
-  accountInput.input.setAttribute('readonly', true)
+// TODO: enumerate accountInput states and update on state transition?
+
+async function connectBrowserAccount(accounts) {
+  accounts = await accounts
+  if (!accounts.length) {
+    connectButton.disabled = false
+    accountInput.input.value = ''
+    accountInput.input.dispatchEvent(new Event('change'))
+    accountInput.input.setAttribute('readonly', false)
+  }
+  else if (accounts[0] !== accountInput.input.value) {
+    connectButton.disabled = true
+    signer = await browserProvider.getSigner()
+    accountInput.input.value = await signer.getAddress()
+    accountInput.input.dispatchEvent(new Event('change'))
+    accountInput.input.setAttribute('readonly', true)
+  }
+  else {
+    // TODO: any checks required if account has not changed?
+  }
 }
-// TODO: listen for wallet-initiated disconnect
-// make accountInput writable again
-// make connectButton enabled again
 
 const connectButton = walletSelectDiv.appendChild(document.createElement('input'))
 connectButton.type = 'button'
 connectButton.value = 'Connect'
 connectButton.addEventListener('click', () => {
   if (browserWalletRadio.checked)
-    connectBrowserAccount()
+    connectBrowserAccount(
+      window.ethereum.request({method: 'eth_requestAccounts', params: []})
+    )
   else {
     console.assert(walletConnectRadio.checked, `No walletSelect radio checked`)
     console.log(`WalletConnect not yet supported`) // TODO
