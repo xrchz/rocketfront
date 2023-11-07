@@ -97,23 +97,23 @@ const accountInput = createAddressInput()
 
 accountLabel.appendChild(accountInput.div)
 
-const rETHBalanceLabel = rETHBalanceDiv.appendChild(document.createElement('label'))
-rETHBalanceLabel.innerText = 'rETH balance: '
-const rETHBalanceInput = rETHBalanceDiv.appendChild(document.createElement('input'))
-rETHBalanceInput.type = 'text'
-rETHBalanceInput.setAttribute('readonly', true)
-rETHBalanceDiv.classList.add('balance')
+function createBalanceDiv(div, token) {
+  const label = div.appendChild(document.createElement('label'))
+  label.innerText = `${token} balance: `
+  const input = div.appendChild(document.createElement('input'))
+  const span = div.appendChild(document.createElement('span'))
+  input.type = 'text'
+  input.setAttribute('readonly', true)
+  div.classList.add('balance')
+  return {input, span}
+}
 
-const ETHBalanceLabel = ETHBalanceDiv.appendChild(document.createElement('label'))
-ETHBalanceLabel.innerText = 'ETH balance: '
-const ETHBalanceInput = ETHBalanceDiv.appendChild(document.createElement('input'))
-ETHBalanceInput.type = 'text'
-ETHBalanceDiv.classList.add('balance')
-ETHBalanceInput.setAttribute('readonly', true)
+const {input: rETHBalanceInput, span: rETHBalanceSpan} = createBalanceDiv(rETHBalanceDiv, 'rETH')
+const {input: ETHBalanceInput, span: ETHBalanceSpan} = createBalanceDiv(ETHBalanceDiv, 'ETH')
 
 async function updateBalances() {
-  rETHBalanceInput.value = 'loading...' // TODO: don't replace old value, just indicate loading
-  ETHBalanceInput.value = 'loading...'
+  rETHBalanceSpan.innerText = 'loading...'
+  ETHBalanceSpan.innerText = 'loading...'
   const address = await accountInput.input.theAddress
   if (address) {
     const rETHBalance = await rocketToken.balanceOf(address)
@@ -125,6 +125,8 @@ async function updateBalances() {
     rETHBalanceInput.value = ''
     ETHBalanceInput.value = ''
   }
+  rETHBalanceSpan.innerText = ''
+  ETHBalanceSpan.innerText = ''
 }
 
 accountInput.input.addEventListener('change', updateBalances, {passive: true})
