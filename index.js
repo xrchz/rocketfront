@@ -1,10 +1,14 @@
 import { ethers } from './node_modules/ethers/dist/ethers.min.js'
-import { WalletConnectModal } from 'https://unpkg.com/@walletconnect/modal'
+import wcPkg from "https://esm.run/@walletconnect/ethereum-provider/dist/index.umd.js"
+const EthereumProvider = wcPkg.EthereumProvider
+
+const walletConnectProjectId = 'b0865b6ca065423e47b7d6dffa2f5e18'
 
 const title = document.createElement('h1')
 const accountLabel = document.createElement('label')
 const rETHBalanceDiv = document.createElement('div')
 const ETHBalanceDiv = document.createElement('div')
+const rETHHistoryDiv = document.createElement('div')
 const walletSelectDiv = document.createElement('div')
 const statusDiv = document.createElement('div')
 
@@ -16,6 +20,7 @@ document.querySelector('body').append(
   accountLabel,
   rETHBalanceDiv,
   ETHBalanceDiv,
+  rETHHistoryDiv,
   walletSelectDiv,
   statusDiv
 )
@@ -174,6 +179,11 @@ async function connectBrowserAccount(accounts) {
   }
 }
 
+const wcEthereum = await EthereumProvider.init({
+  projectId: walletConnectProjectId,
+  chains: [1], // TODO: add other chains as needed
+})
+
 const connectButton = walletSelectDiv.appendChild(document.createElement('input'))
 connectButton.type = 'button'
 connectButton.value = 'Connect'
@@ -184,7 +194,7 @@ connectButton.addEventListener('click', () => {
     )
   else {
     console.assert(walletConnectRadio.checked, `No walletSelect radio checked`)
-    console.log(`WalletConnect not yet supported`) // TODO
+    wcEthereum.request({method: 'eth_requestAccounts'}) // TODO: handle result
   }
 })
 
@@ -203,6 +213,13 @@ provider.addListener('block', async () => {
   await updateBlockNumber()
   await updateBalances()
 })
+
+try {
+  await wcEthereum.connect()
+}
+catch (err) {
+  console.error(err)
+}
 
 // TODO: form to mint rETH
 // TODO: form to burn rETH
