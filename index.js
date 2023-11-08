@@ -1,4 +1,5 @@
 import { ethers } from './node_modules/ethers/dist/ethers.min.js'
+import { WalletConnectModal } from 'https://unpkg.com/@walletconnect/modal'
 
 const title = document.createElement('h1')
 const accountLabel = document.createElement('label')
