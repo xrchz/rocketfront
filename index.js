@@ -9,6 +9,7 @@ const accountLabel = document.createElement('label')
 const rETHBalanceDiv = document.createElement('div')
 const ETHBalanceDiv = document.createElement('div')
 const rETHHistoryDiv = document.createElement('div')
+const rETHPricesDiv = document.createElement('div')
 const walletSelectDiv = document.createElement('div')
 const statusDiv = document.createElement('div')
 
@@ -21,6 +22,7 @@ document.querySelector('body').append(
   rETHBalanceDiv,
   ETHBalanceDiv,
   rETHHistoryDiv,
+  rETHPricesDiv,
   walletSelectDiv,
   statusDiv
 )
@@ -40,7 +42,9 @@ const rocketStorage = new ethers.Contract(rocketStorageAddress,
   provider)
 const getRocketAddress = name => rocketStorage['getAddress(bytes32)'](ethers.id(`contract.address${name}`))
 const rocketToken = new ethers.Contract(await getRocketAddress('rocketTokenRETH'),
-  ['function balanceOf(address) view returns (uint256)'],
+  ['function balanceOf(address) view returns (uint256)',
+   'function allowance(address owner, address spender) view returns (uint256)',
+   'function getExchangeRate() view returns (uint256)'],
   provider)
 
 function createAddressInput() {
@@ -182,6 +186,9 @@ async function connectBrowserAccount(accounts) {
 const wcEthereum = await EthereumProvider.init({
   projectId: walletConnectProjectId,
   chains: [1], // TODO: add other chains as needed
+  showQrModal: false,
+  methods: ["eth_sendTransaction", "personal_sign"],
+  events: ["chainChanged", "accountsChanged"],
 })
 
 const connectButton = walletSelectDiv.appendChild(document.createElement('input'))
@@ -209,10 +216,49 @@ async function updateBlockNumber() {
 }
 await updateBlockNumber()
 statusConnected.innerText = await provider.getNetwork().then(n => n.name)
+
+const rocketSwapRouterAddress = '0x16d5a408e807db8ef7c578279beeee6b228f1c1c' // TODO: alternative for other networks
+const rocketSwapRouter = new ethers.Contract(rocketSwapRouterAddress,
+  ['function swapTo(uint256 _uni, uint256 _bal, uint256 _min, uint256 _ideal) payable',
+   'function swapFrom(uint256 _uni, uint256 _bal, uint256 _min, uint256 _ideal, uint256 _in)',
+   'function optimiseSwapTo(uint256 _in, uint256 _steps) view returns (uint256[2] _portions, uint256 _out)',
+   'function optimiseSwapFrom(uint256 _in, uint256 _steps) view returns (uint256[2] _portions, uint256 _out)',
+   'function uniswapQuoter() view returns (address)',
+   'function WETH() view returns (address)'],
+  provider)
+
+// TODO: show rETH ratios (primary and secondary)
+const uniswapQuoter = new ethers.Contract(await rocketSwapRouter.uniswapQuoter(),
+  ['function quoteExactInputSingle(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint160 priceLimit) returns (uint256)'],
+  provider)
+const WETH = await rocketSwapRouter.WETH()
+const uniswapFee = 500
+const oneEther = ethers.parseEther('1')
+const primaryPriceSpan = document.createElement('span')
+const secondaryPriceSpan = document.createElement('span')
+rETHPricesDiv.classList.add('prices')
+rETHPricesDiv.append(primaryPriceSpan, secondaryPriceSpan)
+async function updatePrices() {
+  primaryPriceSpan.innerText += ' loading...'
+  secondaryPriceSpan.innerText += ' loading...'
+  const primaryPrice = await rocketToken.getExchangeRate()
+  primaryPriceSpan.innerText = `Primary: 1 rETH = ${ethers.formatEther(primaryPrice)} ETH`
+  const secondaryPrice = await uniswapQuoter.quoteExactInputSingle.staticCall(
+    await rocketToken.getAddress(), WETH, uniswapFee, oneEther, 0)
+  secondaryPriceSpan.innerText = `Uniswap: 1 rETH = ${ethers.formatEther(secondaryPrice)} ETH`
+  // TODO: display premium/discount %
+  // TODO: allow swapping direction?
+  // TODO: put numbers in readonly inputs?
+}
+await updatePrices()
+
 provider.addListener('block', async () => {
   await updateBlockNumber()
   await updateBalances()
+  await updatePrices()
 })
+
+wcEthereum.on('connect', (x) => console.log(`wcEthereum connected ${x}`))
 
 try {
   await wcEthereum.connect()
@@ -221,10 +267,12 @@ catch (err) {
   console.error(err)
 }
 
-// TODO: form to mint rETH
-// TODO: form to burn rETH
+// TODO: form to mint (stake ETH) rETH
+// TODO: form to burn (unstake ETH) rETH
+// TODO: allowance of swap contract for rETH when unstaking
+// preview amounts swapped via which routes, fees and gas fees etc.
 
-// TODO: show rETH approvals and option to revoke?
+// TODO: show all rETH allowances and option to revoke?
 
 // TODO: display NO status
 

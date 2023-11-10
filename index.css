@@ -38,7 +38,7 @@ div.address {
 div.address > input {
   width: 42em;
 }
-div.balance, div.wallet {
+div.prices, div.balance, div.wallet {
   margin-top: 1em;
 }
 div.prices {
