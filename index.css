@@ -2,9 +2,10 @@ body {
   font-family: monospace;
   background-color: #f92;
   color: #17f;
-  width: fit-content;
-  margin: auto;
-  padding: 1em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
 }
 input {
   background-color: #fd9;
@@ -40,7 +41,21 @@ div.address > input {
 div.balance, div.wallet {
   margin-top: 1em;
 }
-div.status {
+div.prices {
+  display: flex;
+  flex-direction: column;
+}
+div.prices > span {
+  display: block;
+}
+div.status, div.wallet {
   display: flex;
   justify-content: space-evenly;
+  width: fit-content;
+}
+div.wallet > label,
+div.wallet > input,
+div.status > span {
+  padding-left: 1em;
+  padding-right: 1em;
 }
