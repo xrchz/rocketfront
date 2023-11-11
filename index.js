@@ -113,7 +113,7 @@ function createBalanceDiv(div, token) {
   const input = div.appendChild(document.createElement('input'))
   const span = div.appendChild(document.createElement('span'))
   input.type = 'text'
-  input.setAttribute('readonly', true)
+  input.setAttribute('readonly', '')
   div.classList.add('balance')
   return {input, span}
 }
@@ -158,6 +158,7 @@ browserWalletRadio.type = 'radio'
 walletConnectRadio.name = 'wallet'
 browserWalletRadio.name = 'wallet'
 browserWalletRadio.checked = true
+// TODO: also disable switching radio when connected
 
 window.ethereum.on('accountsChanged', connectBrowserAccount)
 
@@ -169,14 +170,14 @@ async function connectBrowserAccount(accounts) {
     connectButton.disabled = false
     accountInput.input.value = ''
     accountInput.input.dispatchEvent(new Event('change'))
-    accountInput.input.setAttribute('readonly', false)
+    accountInput.input.removeAttribute('readonly')
   }
   else if (accounts[0] !== accountInput.input.value) {
     connectButton.disabled = true
     signer = await browserProvider.getSigner()
     accountInput.input.value = await signer.getAddress()
     accountInput.input.dispatchEvent(new Event('change'))
-    accountInput.input.setAttribute('readonly', true)
+    accountInput.input.setAttribute('readonly', '')
   }
   else {
     // TODO: any checks required if account has not changed?
@@ -216,6 +217,8 @@ async function updateBlockNumber() {
 }
 await updateBlockNumber()
 statusConnected.innerText = await provider.getNetwork().then(n => n.name)
+// TODO: add toggle for auto-updating block (+ dependents)
+// TODO: add button for manual update (when auto is off)
 
 const rocketSwapRouterAddress = '0x16d5a408e807db8ef7c578279beeee6b228f1c1c' // TODO: alternative for other networks
 const rocketSwapRouter = new ethers.Contract(rocketSwapRouterAddress,
