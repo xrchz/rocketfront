@@ -29,10 +29,20 @@ document.querySelector('body').append(
 
 let browserProvider = new ethers.BrowserProvider(window.ethereum)
 let signer
+let network = {name: 'mainnet', chainId: '0x1'}
 
-let provider = new ethers.FallbackProvider([
-  browserProvider,
-  ethers.getDefaultProvider('mainnet')])
+if ('request' in browserProvider) {
+  await browserProvider
+    .request({method: 'wallet_switchEthereumChain', params: [{chainId: network.chainId}]})
+    .catch(err => {
+      console.error(`Could not switch browserProvider chain ${err}`)
+      browserProvider = null
+    })
+}
+
+const providers = browserProvider ? [browserProvider] : []
+providers.push(ethers.getDefaultProvider(network.name))
+let provider = new ethers.FallbackProvider(providers)
 // TODO: make network configurable
 // TODO: allow custom RPC?
 
