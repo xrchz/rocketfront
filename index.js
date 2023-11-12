@@ -172,7 +172,7 @@ browserWalletRadio.checked = true
 
 window.ethereum.on('accountsChanged', connectBrowserAccount)
 
-// TODO: enumerate accountInput states and update on state transition?
+// TODO: make accountInput a state machine
 
 async function connectBrowserAccount(accounts) {
   accounts = await accounts
@@ -217,18 +217,42 @@ connectButton.addEventListener('click', () => {
 })
 
 statusDiv.classList.add('status')
-statusDiv.innerText = ''
+
 // TODO: make statusConnected a network selector instead
 // TODO: update it if the provider disconnects
-const statusConnected = statusDiv.appendChild(document.createElement('span'))
-const statusBlockNumber = statusDiv.appendChild(document.createElement('span'))
-async function updateBlockNumber() {
-  statusBlockNumber.innerText = await provider.getBlockNumber().then(n => n.toString())
-}
-await updateBlockNumber()
-statusConnected.innerText = await provider.getNetwork().then(n => n.name)
+const statusConnected = document.createElement('span')
+
+const statusTokenAddress = document.createElement('span')
+statusTokenAddress.append(
+  document.createTextNode('rETH address:'),
+  document.createElement('br'),
+  document.createTextNode(await rocketToken.getAddress())
+)
+
+const statusBlockNumber = document.createElement('span')
+let blockNumberNode = document.createTextNode('loading...')
+statusBlockNumber.append(
+  document.createTextNode('block number:'),
+  document.createElement('br'),
+  blockNumberNode
+)
 // TODO: add toggle for auto-updating block (+ dependents)
 // TODO: add button for manual update (when auto is off)
+async function updateBlockNumber() {
+  const newNode = document.createTextNode(
+    await provider.getBlockNumber().then(n => n.toString()))
+  statusBlockNumber.replaceChild(newNode, blockNumberNode)
+  blockNumberNode = newNode
+}
+statusConnected.append(
+  document.createTextNode('network:'),
+  document.createElement('br'),
+  document.createTextNode(await provider.getNetwork().then(n => n.name))
+)
+await updateBlockNumber()
+
+statusDiv.innerText = ''
+statusDiv.append(statusConnected, statusTokenAddress, statusBlockNumber)
 
 const rocketSwapRouterAddress = '0x16d5a408e807db8ef7c578279beeee6b228f1c1c' // TODO: alternative for other networks
 const rocketSwapRouter = new ethers.Contract(rocketSwapRouterAddress,
@@ -240,7 +264,6 @@ const rocketSwapRouter = new ethers.Contract(rocketSwapRouterAddress,
    'function WETH() view returns (address)'],
   provider)
 
-// TODO: show rETH ratios (primary and secondary)
 const uniswapQuoter = new ethers.Contract(await rocketSwapRouter.uniswapQuoter(),
   ['function quoteExactInputSingle(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint160 priceLimit) returns (uint256)'],
   provider)
