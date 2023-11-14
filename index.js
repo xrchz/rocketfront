@@ -236,8 +236,6 @@ statusBlockNumber.append(
   document.createElement('br'),
   blockNumberNode
 )
-// TODO: add toggle for auto-updating block (+ dependents)
-// TODO: add button for manual update (when auto is off)
 async function updateBlockNumber() {
   const newNode = document.createTextNode(
     await provider.getBlockNumber().then(n => n.toString()))
@@ -251,8 +249,33 @@ statusConnected.append(
 )
 await updateBlockNumber()
 
+const statusUpdateControl = document.createElement('span')
+const statusUpdateLabel = document.createElement('label')
+const statusUpdateCheckbox = document.createElement('input')
+const statusUpdateButton = document.createElement('input')
+statusUpdateCheckbox.type = 'checkbox'
+statusUpdateButton.type = 'button'
+statusUpdateButton.value = 'Update'
+statusUpdateCheckbox.setAttribute('checked', '')
+statusUpdateButton.classList.add('hidden')
+let statusUpdateText = document.createTextNode('auto-update:')
+statusUpdateLabel.append(
+  statusUpdateText,
+  document.createElement('br'),
+  statusUpdateCheckbox,
+)
+statusUpdateControl.append(
+  statusUpdateLabel,
+  statusUpdateButton
+)
+
 statusDiv.innerText = ''
-statusDiv.append(statusConnected, statusTokenAddress, statusBlockNumber)
+statusDiv.append(
+  statusConnected,
+  statusTokenAddress,
+  statusBlockNumber,
+  statusUpdateControl
+)
 
 const rocketSwapRouterAddress = '0x16d5a408e807db8ef7c578279beeee6b228f1c1c' // TODO: alternative for other networks
 const rocketSwapRouter = new ethers.Contract(rocketSwapRouterAddress,
@@ -288,11 +311,31 @@ async function updatePrices() {
 }
 await updatePrices()
 
-provider.addListener('block', async () => {
+async function onBlockUpdate() {
   await updateBlockNumber()
   await updateBalances()
   await updatePrices()
+}
+
+await provider.addListener('block', onBlockUpdate)
+statusUpdateCheckbox.addEventListener('change', () => {
+  if (statusUpdateCheckbox.checked) {
+    const newText = document.createTextNode('auto-update:')
+    statusUpdateLabel.replaceChild(newText, statusUpdateText)
+    statusUpdateText = newText
+    statusUpdateButton.classList.add('hidden')
+    onBlockUpdate().then(() => provider.addListener('block', onBlockUpdate))
+  }
+  else {
+    const newText = document.createTextNode('control:')
+    statusUpdateLabel.replaceChild(newText, statusUpdateText)
+    statusUpdateText = newText
+    statusUpdateButton.classList.remove('hidden')
+    provider.removeAllListeners('block')
+  }
 })
+
+statusUpdateButton.addEventListener('click', onBlockUpdate)
 
 wcEthereum.on('connect', (x) => console.log(`wcEthereum connected ${x}`))
 

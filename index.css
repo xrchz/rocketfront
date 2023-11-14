@@ -63,3 +63,6 @@ div.status > span {
 div.status > span {
   text-align: center;
 }
+.hidden {
+  display: none;
+}
