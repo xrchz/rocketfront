@@ -10,6 +10,7 @@ const rETHBalanceDiv = document.createElement('div')
 const ETHBalanceDiv = document.createElement('div')
 const rETHHistoryDiv = document.createElement('div')
 const rETHPricesDiv = document.createElement('div')
+const rETHApprovalsDiv = document.createElement('div')
 const walletSelectDiv = document.createElement('div')
 const statusDiv = document.createElement('div')
 
@@ -18,12 +19,13 @@ statusDiv.innerText = 'loading...'
 
 document.querySelector('body').append(
   title,
+  walletSelectDiv,
   accountLabel,
   rETHBalanceDiv,
   ETHBalanceDiv,
-  rETHHistoryDiv,
   rETHPricesDiv,
-  walletSelectDiv,
+  rETHHistoryDiv,
+  rETHApprovalsDiv,
   statusDiv
 )
 
@@ -149,10 +151,46 @@ async function updateBalances() {
   ETHBalanceSpan.innerText = ''
 }
 
-accountInput.input.addEventListener('change', updateBalances, {passive: true})
+const DBPromise = new Promise(resolve => {
+  const openRequest = window.indexedDB.open('', 1)
+  openRequest.addEventListener('error',
+    () => {
+      resolve(null)
+      console.error(`error opening db: ${openRequest.error}`)
+    },
+    {passive: true, once: true}
+  )
+  openRequest.addEventListener('upgradeneeded',
+    () => {
+      const db = openRequest.result
+      const priceStore = db.createObjectStore('rETH-prices', {keyPath: 'blockNumber'})
+      const transferStore = db.createObjectStore('rETH-transfers', {autoIncrement: true})
+      const priceIndex = priceStore.createIndex('', 'blockNumber', {unique: true})
+      const transferFromIndex = transferStore.createIndex('from', ['from', 'blockNumber', 'index'])
+      const transferToIndex = transferStore.createIndex('to', ['to', 'blockNumber', 'index'])
+    },
+    {passive: true, once: true})
+  openRequest.addEventListener('success',
+    () => resolve(openRequest.result),
+    {passive: true, once: true}
+  )
+})
 
-// TODO: display rETH history and profits
-// - use IndexedDB to cache the data needed
+async function updateHistory() {
+  const db = await DBPromise
+  // TODO: ensure we have rETH-transfers from 0 till present to current account
+  // TODO: ensure we have rETH-transfers from 0 till present from current account
+  // TODO: ensure we have rETH-prices for all the transfers above
+  // TODO: generate and display rETH transfer history and profits
+}
+
+async function changeAccount() {
+  await updateBlockNumber()
+  await updateBalances()
+  await updateHistory()
+}
+
+accountInput.input.addEventListener('change', changeAccount, {passive: true})
 
 walletSelectDiv.classList.add('wallet')
 const browserWalletLabel = walletSelectDiv.appendChild(document.createElement('label'))
@@ -214,7 +252,7 @@ connectButton.addEventListener('click', () => {
     console.assert(walletConnectRadio.checked, `No walletSelect radio checked`)
     wcEthereum.request({method: 'eth_requestAccounts'}) // TODO: handle result
   }
-})
+}, {passive: true})
 
 statusDiv.classList.add('status')
 
@@ -333,9 +371,9 @@ statusUpdateCheckbox.addEventListener('change', () => {
     statusUpdateButton.classList.remove('hidden')
     provider.removeAllListeners('block')
   }
-})
+}, {passive: true})
 
-statusUpdateButton.addEventListener('click', onBlockUpdate)
+statusUpdateButton.addEventListener('click', onBlockUpdate, {passive: true})
 
 wcEthereum.on('connect', (x) => console.log(`wcEthereum connected ${x}`))
 
