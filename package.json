@@ -2,7 +2,12 @@
   "name": "rocketpond",
   "version": "0.0.1",
   "license": "GPL-3.0-or-later",
+  "repository": "github:xrchz/rocketfront",
   "description": "decentralised frontend for liquid staking with Rocket Pool",
   "type": "module",
-  "dependencies": { "ethers": "6" }
+  "dependencies": { "ethers": "6" },
+  "devDependencies": { "http-server": "14" },
+  "scripts" : {
+    "serve": "npx http-server --cors -c-1"
+  }
 }
