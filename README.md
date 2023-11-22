@@ -5,5 +5,5 @@ Works with any HTTP server.
 ## Quick Start
 
 - `npm install`
-- `npx http-server --cors`
+- `npm run serve`
 - open `http://localhost:8080`
