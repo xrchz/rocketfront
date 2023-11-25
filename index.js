@@ -55,8 +55,10 @@ const rocketStorage = new ethers.Contract(rocketStorageAddress,
 const getRocketAddress = name => rocketStorage['getAddress(bytes32)'](ethers.id(`contract.address${name}`))
 const rocketToken = new ethers.Contract(await getRocketAddress('rocketTokenRETH'),
   ['function balanceOf(address) view returns (uint256)',
-   'function allowance(address owner, address spender) view returns (uint256)',
-   'function getExchangeRate() view returns (uint256)'],
+    'function allowance(address _owner, address _spender) view returns (uint256)',
+    'function getExchangeRate() view returns (uint256)',
+    'event Transfer(address indexed _from, address indexed _to, uint256)'
+  ],
   provider)
 
 function createAddressInput() {
@@ -152,7 +154,7 @@ async function updateBalances() {
 }
 
 const DBPromise = new Promise(resolve => {
-  const openRequest = window.indexedDB.open('', 1)
+  const openRequest = window.indexedDB.open('RocketFront', 1)
   openRequest.addEventListener('error',
     () => {
       resolve(null)
@@ -164,10 +166,13 @@ const DBPromise = new Promise(resolve => {
     () => {
       const db = openRequest.result
       const priceStore = db.createObjectStore('rETH-prices', {keyPath: 'blockNumber'})
-      const transferStore = db.createObjectStore('rETH-transfers', {autoIncrement: true})
+      const transferStore = db.createObjectStore(
+        'rETH-transfers',
+        {keyPath: ['from', 'to', 'transactionHash', 'transactionIndex']})
+      const transferQueryStore = db.createObjectStore('rETH-transfer-queries', {keyPath: 'account'})
       const priceIndex = priceStore.createIndex('', 'blockNumber', {unique: true})
-      const transferFromIndex = transferStore.createIndex('from', ['from', 'blockNumber', 'index'])
-      const transferToIndex = transferStore.createIndex('to', ['to', 'blockNumber', 'index'])
+      const transferFromIndex = transferStore.createIndex('from', ['from', 'blockNumber'])
+      const transferToIndex = transferStore.createIndex('to', ['to', 'blockNumber'])
     },
     {passive: true, once: true})
   openRequest.addEventListener('success',
@@ -176,12 +181,95 @@ const DBPromise = new Promise(resolve => {
   )
 })
 
-async function updateHistory() {
+function requestToPromise(req) {
+  return new Promise((resolve, reject) => {
+    req.addEventListener('success', () => resolve(req.result), {once: true, passive: true})
+    req.addEventListener('error', () => reject(req.error), {once: true, passive: true})
+    if (req.readyState === 'done')
+      req.dispatchEvent(new Event(req.error === null ? 'error' : 'success'))
+  })
+}
+
+// TODO: make configurable by user?
+const MAX_QUERY_LENGTH = 1000
+
+async function ensureTransfers(account, minBlock, maxBlock) {
   const db = await DBPromise
-  // TODO: ensure we have rETH-transfers from 0 till present to current account
-  // TODO: ensure we have rETH-transfers from 0 till present from current account
+  const transaction = db.transaction(['rETH-transfers', 'rETH-transfer-queries'], 'readwrite')
+  const transferQueryStore = transaction.objectStore('rETH-transfer-queries')
+  const transferStore = transaction.objectStore('rETH-transfers')
+  const testEntry = await transferQueryStore.get(account)
+  const entry = testEntry || {}
+  if (typeof entry.account === 'undefined') entry.account = account
+  if (typeof entry.to === 'undefined') entry.to = {min: Infinity, max: -Infinity}
+  if (typeof entry.from === 'undefined') entry.from = {min: Infinity, max: -Infinity}
+  if (typeof testEntry === 'undefined') await transferQueryStore.add(entry, account)
+  if (!'from' in entry) {
+    console.error(`idk ${Object.keys(entry)}`)
+    return
+  }
+  if (typeof entry.from !== 'object') {
+    console.error(`idkw ${typeof entry.from}`)
+    return
+  }
+  const makeLowerRange = (x, filter) => ({min: minBlock, max: Math.min(maxBlock, x.min), filter, record: x})
+  const makeUpperRange = (x, filter) => ({min: Math.max(x.max, minBlock), max: maxBlock, filter, record: x})
+  const TransferFilter = rocketToken.filters['Transfer']
+  const TransferFromFilter = TransferFilter(account, null, null)
+  const TransferToFilter = TransferFilter(null, account, null)
+  const ranges = [
+    makeLowerRange(entry.from, TransferFromFilter),
+    makeUpperRange(entry.from, TransferFromFilter),
+    makeLowerRange(entry.to, TransferToFilter),
+    makeUpperRange(entry.to, TransferToFilter)
+  ]
+  for (const {min, max, filter, record} of ranges) {
+    let currentMin = min
+    const calculateMax = () => Math.min(max, currentMin + MAX_QUERY_LENGTH)
+    let currentMax = calculateMax()
+    while (currentMin < max) {
+      const logs = await rocketToken.queryFilter(filter, currentMin, currentMax)
+      for (const log of logs) {
+        const from = log.args[0]
+        const to = log.args[1]
+        const amount = log.args[2]
+        const transactionHash = log.transactionHash
+        const transactionIndex = log.transactionIndex
+        const blockNumber = log.blockNumber
+        const key = [from, to, log.transactionHash, log.transactionIndex]
+        const checkKey = await requestToPromise(transferStore.getKey(key))
+        if (typeof checkKey === 'undefined')
+          await requestToPromise(
+            transferStore.add(
+              {from, to, amount, transactionHash, transactionIndex, blockNumber})
+          )
+      }
+      currentMin = currentMax
+      currentMax = calculateMax()
+    }
+    if (min < record.min) record.min = min
+    if (max > record.max) record.max = max
+  }
+  await transferQueryStore.put(entry, account)
+}
+
+async function updateHistory() {
+  const address = await accountInput.input.theAddress
+  if (!address) return // TODO: clear history as necessary
+  const blockNumber = parseInt(blockNumberNode.textContent)
+  await ensureTransfers(address, 0, blockNumber)
   // TODO: ensure we have rETH-prices for all the transfers above
-  // TODO: generate and display rETH transfer history and profits
+  /*
+  const range = IDBKeyRange.bound(
+    [account, minBlock, 0],
+    [account, maxBlock + 1, 0], false, true)
+  const fromIndex = transferStore.index('from')
+  const fromKeys = await requestToPromise(fromIndex.getAllKeys(range))
+  const toIndex = transferStore.index('to')
+  const toKeys = await requestToPromise(toIndex.getAllKeys(range))
+  */
+  // TODO: collect all transfers to/from the current account, and their NAV price
+  // TODO: display rETH transfer history and profits
 }
 
 async function changeAccount() {
